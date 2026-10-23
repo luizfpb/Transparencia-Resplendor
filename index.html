@@ -1,0 +1,164 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Transparência Resplendor — Para onde vai o dinheiro público</title>
+  <meta name="description" content="Receitas, despesas, limites da LRF e comparação regional da Prefeitura de Resplendor/MG, com dados oficiais do Tesouro Nacional (SICONFI), IBGE e Banco Central.">
+  <meta name="theme-color" content="#0a0f1d" media="(prefers-color-scheme: dark)">
+  <meta name="theme-color" content="#f8fafc" media="(prefers-color-scheme: light)">
+  <meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self' https://cdn.jsdelivr.net; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; font-src https://fonts.gstatic.com; img-src 'self' data:; connect-src 'self' https://cdn.jsdelivr.net; manifest-src 'self'; base-uri 'self';">
+
+  <!-- Compartilhamento (WhatsApp, redes sociais) -->
+  <meta property="og:type" content="website">
+  <meta property="og:locale" content="pt_BR">
+  <meta property="og:title" content="Transparência Resplendor">
+  <meta property="og:description" content="De onde vem e para onde vai cada real da Prefeitura de Resplendor/MG. Dados oficiais do Tesouro Nacional.">
+  <meta property="og:image" content="assets/og-image.png">
+  <meta property="og:image:width" content="1200">
+  <meta property="og:image:height" content="630">
+  <meta name="twitter:card" content="summary_large_image">
+
+  <link rel="icon" href="assets/icon.svg" type="image/svg+xml">
+  <link rel="apple-touch-icon" href="assets/icon-192.png">
+  <link rel="manifest" href="manifest.webmanifest">
+
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;600;700&family=Plus+Jakarta+Sans:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+  <link rel="preload" href="data/resplendor.json" as="fetch" crossorigin>
+  <link rel="stylesheet" href="css/style.css">
+
+  <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.1/dist/chart.umd.min.js" defer></script>
+  <script type="module" src="js/main.js"></script>
+</head>
+<body>
+  <a class="skip-link" href="#conteudo">Pular para o conteúdo</a>
+
+  <header class="top-header">
+    <div class="header-inner">
+      <a class="brand-area" href="#aba=visao" aria-label="Transparência Resplendor — início">
+        <span class="brand-logo" aria-hidden="true">
+          <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 2L2 7l10 5 10-5-10-5zM2 17l10 5 10-5M2 12l10 5 10-5"/></svg>
+        </span>
+        <span class="brand-text">
+          <span class="brand-title">Transparência Resplendor <span class="city-badge">MG</span></span>
+          <span class="brand-subtitle">Controle social com dados oficiais</span>
+        </span>
+      </a>
+
+      <div class="header-actions">
+        <div class="year-control" role="group" aria-label="Exercício fiscal">
+          <button class="icon-btn" id="anoAnterior" type="button" aria-label="Ano anterior">
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" aria-hidden="true"><polyline points="15 18 9 12 15 6"/></svg>
+          </button>
+          <label class="visually-hidden" for="anoSelect">Exercício</label>
+          <select id="anoSelect" class="year-select"></select>
+          <button class="icon-btn" id="anoProximo" type="button" aria-label="Próximo ano">
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" aria-hidden="true"><polyline points="9 18 15 12 9 6"/></svg>
+          </button>
+        </div>
+
+        <details class="menu" id="menuExportar">
+          <summary class="action-btn">
+            <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>
+            Baixar dados
+          </summary>
+          <div class="menu-panel" role="menu">
+            <button type="button" role="menuitem" data-export="receitas">Receitas do ano (CSV)</button>
+            <button type="button" role="menuitem" data-export="despesas">Despesas por função e subfunção (CSV)</button>
+            <button type="button" role="menuitem" data-export="elementos">Despesas por elemento (CSV)</button>
+            <button type="button" role="menuitem" data-export="serie">Série histórica completa (CSV)</button>
+            <button type="button" role="menuitem" data-export="json">Base completa (JSON)</button>
+          </div>
+        </details>
+
+        <button class="icon-btn" id="temaBtn" type="button" aria-label="Alternar tema claro ou escuro">
+          <svg id="temaIcone" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"></svg>
+        </button>
+      </div>
+    </div>
+
+    <nav class="nav-tabs-bar" aria-label="Seções">
+      <div class="tabs-container" role="tablist" aria-label="Seções do painel" id="tablist">
+        <button class="nav-tab" role="tab" id="tab-visao" aria-controls="painel-visao" data-aba="visao">Visão geral</button>
+        <button class="nav-tab" role="tab" id="tab-fluxo" aria-controls="painel-fluxo" data-aba="fluxo">Fluxo do dinheiro</button>
+        <button class="nav-tab" role="tab" id="tab-receitas" aria-controls="painel-receitas" data-aba="receitas">De onde vem</button>
+        <button class="nav-tab" role="tab" id="tab-despesas" aria-controls="painel-despesas" data-aba="despesas">Para onde vai</button>
+        <button class="nav-tab" role="tab" id="tab-gastos" aria-controls="painel-gastos" data-aba="gastos">Em que se gasta</button>
+        <button class="nav-tab" role="tab" id="tab-calculadora" aria-controls="painel-calculadora" data-aba="calculadora">Meu imposto</button>
+        <button class="nav-tab" role="tab" id="tab-lrf" aria-controls="painel-lrf" data-aba="lrf">Limites da lei</button>
+        <button class="nav-tab" role="tab" id="tab-historico" aria-controls="painel-historico" data-aba="historico">Histórico</button>
+        <button class="nav-tab" role="tab" id="tab-vizinhos" aria-controls="painel-vizinhos" data-aba="vizinhos">Vizinhos</button>
+        <button class="nav-tab" role="tab" id="tab-metodologia" aria-controls="painel-metodologia" data-aba="metodologia">Como ler</button>
+      </div>
+    </nav>
+  </header>
+
+  <main class="main-wrapper" id="conteudo" tabindex="-1">
+    <section class="entity-banner" aria-label="Identificação do município">
+      <div>
+        <h1 class="entity-title">Prefeitura Municipal de Resplendor</h1>
+        <p class="entity-meta" id="entityMeta">CNPJ 18.413.161/0001-72 · IBGE 3154309 · Vale do Rio Doce</p>
+      </div>
+      <div class="entity-tags" id="entityTags"></div>
+    </section>
+
+    <div id="estadoCarregamento" class="loading-state" role="status" aria-live="polite">
+      <span class="spinner" aria-hidden="true"></span> Carregando dados oficiais…
+    </div>
+
+    <section class="kpi-grid" id="kpis" aria-label="Indicadores principais do exercício" hidden></section>
+
+    <section class="tab-panel" role="tabpanel" id="painel-visao" aria-labelledby="tab-visao" hidden></section>
+    <section class="tab-panel" role="tabpanel" id="painel-fluxo" aria-labelledby="tab-fluxo" hidden></section>
+    <section class="tab-panel" role="tabpanel" id="painel-receitas" aria-labelledby="tab-receitas" hidden></section>
+    <section class="tab-panel" role="tabpanel" id="painel-despesas" aria-labelledby="tab-despesas" hidden></section>
+    <section class="tab-panel" role="tabpanel" id="painel-gastos" aria-labelledby="tab-gastos" hidden></section>
+    <section class="tab-panel" role="tabpanel" id="painel-calculadora" aria-labelledby="tab-calculadora" hidden></section>
+    <section class="tab-panel" role="tabpanel" id="painel-lrf" aria-labelledby="tab-lrf" hidden></section>
+    <section class="tab-panel" role="tabpanel" id="painel-historico" aria-labelledby="tab-historico" hidden></section>
+    <section class="tab-panel" role="tabpanel" id="painel-vizinhos" aria-labelledby="tab-vizinhos" hidden></section>
+    <section class="tab-panel" role="tabpanel" id="painel-metodologia" aria-labelledby="tab-metodologia" hidden></section>
+  </main>
+
+  <dialog class="modal" id="modal" aria-labelledby="modalTitulo">
+    <div class="modal-window">
+      <div class="modal-header">
+        <h2 id="modalTitulo"></h2>
+        <button class="icon-btn" type="button" id="modalFechar" aria-label="Fechar">
+          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" aria-hidden="true"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
+        </button>
+      </div>
+      <div class="modal-body" id="modalCorpo"></div>
+    </div>
+  </dialog>
+
+  <div class="toast" id="toast" role="status" aria-live="polite"></div>
+
+  <footer class="app-footer">
+    <div class="footer-inner">
+      <div class="footer-col">
+        <h2>Transparência Resplendor</h2>
+        <p>Painel independente de controle social. Os números vêm dos demonstrativos que a própria Prefeitura envia ao Tesouro Nacional, em cumprimento à LRF (LC 101/2000) e à Lei de Acesso à Informação (Lei 12.527/2011).</p>
+        <p class="footer-updated" id="rodapeAtualizado"></p>
+      </div>
+      <div class="footer-col">
+        <h2>Fontes oficiais</h2>
+        <ul class="footer-links">
+          <li><a href="https://siconfi.tesouro.gov.br" target="_blank" rel="noopener">SICONFI — Tesouro Nacional</a></li>
+          <li><a href="https://www.ibge.gov.br/cidades-e-estados/mg/resplendor.html" target="_blank" rel="noopener">IBGE Cidades — Resplendor</a></li>
+          <li><a href="https://fiscalizandocomtce.tce.mg.gov.br" target="_blank" rel="noopener">Fiscalizando com o TCE-MG</a></li>
+          <li><a href="https://dadosabertos.tce.mg.gov.br" target="_blank" rel="noopener">Dados abertos do TCE-MG</a></li>
+        </ul>
+      </div>
+      <div class="footer-col">
+        <h2>Sobre os dados</h2>
+        <p>Encontrou algo estranho? Os números podem ser conferidos linha a linha nos relatórios oficiais. Veja a aba <a href="#aba=metodologia">Como ler</a> para a metodologia completa.</p>
+      </div>
+    </div>
+  </footer>
+
+  <noscript><p class="noscript">Este painel precisa de JavaScript para exibir os gráficos. Os dados brutos estão em <a href="data/resplendor.json">data/resplendor.json</a>.</p></noscript>
+</body>
+</html>

@@ -1,0 +1,13 @@
+{
+  "name": "transparencia-resplendor",
+  "version": "2.0.0",
+  "private": true,
+  "description": "Painel de transparência fiscal da Prefeitura de Resplendor/MG com dados oficiais do SICONFI.",
+  "type": "module",
+  "scripts": {
+    "test": "node --test tests/*.test.mjs",
+    "dados": "python scripts/build_data.py",
+    "servir": "python -m http.server 8080"
+  },
+  "license": "MIT"
+}

@@ -1,0 +1,74 @@
+name: Atualizar dados e publicar
+
+on:
+  push:
+    branches: [main]
+  schedule:
+    - cron: "0 9 * * 1" # toda segunda-feira, 06h de Brasília
+  workflow_dispatch:
+
+permissions:
+  contents: write
+  pages: write
+  id-token: write
+
+concurrency:
+  group: publicar
+  cancel-in-progress: false
+
+jobs:
+  dados:
+    # Rebaixa os dados oficiais só na execução agendada ou manual.
+    if: github.event_name != 'push'
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+      - run: pip install pillow
+      - name: Baixar e validar dados do SICONFI, IBGE e BCB
+        run: python scripts/build_data.py --refresh
+      - run: python scripts/gerar_imagens.py
+      - run: python -m unittest discover tests
+      - name: Registrar mudança nos dados
+        run: |
+          if git diff --quiet -- data assets; then
+            echo "Sem dados novos."
+          else
+            git config user.name "github-actions[bot]"
+            git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+            git add data assets
+            git commit -m "Dados atualizados em $(date -u +%Y-%m-%d)"
+            git push
+          fi
+
+  publicar:
+    needs: dados
+    if: always() && (needs.dados.result == 'success' || needs.dados.result == 'skipped')
+    runs-on: ubuntu-latest
+    environment:
+      name: github-pages
+      url: ${{ steps.deploy.outputs.page_url }}
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: main
+      - uses: actions/setup-node@v4
+        with:
+          node-version: "22"
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+      - run: npm test
+      - run: python -m unittest discover tests
+      - name: Montar site estático
+        run: |
+          mkdir -p _site
+          cp -r index.html manifest.webmanifest sw.js css js data assets _site/
+      - uses: actions/configure-pages@v5
+      - uses: actions/upload-pages-artifact@v3
+        with:
+          path: _site
+      - id: deploy
+        uses: actions/deploy-pages@v4
